@@ -1,0 +1,466 @@
+{
+  "name": "Legal Case Intake Chatbot",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Welcome to our Legal Consultation Service!\n\nI am here to help you with criminal and domestic legal matters.\n\nHow can I assist you today?",
+        "options": {
+          "loadPreviousSession": "memory",
+          "showWelcomeScreen": true,
+          "getStarted": "Start Consultation",
+          "subtitle": "Criminal & Domestic Law Support",
+          "title": "Legal Consultation Chat"
+        }
+      },
+      "id": "ab50eed0-39d9-478a-946b-4f8af203e358",
+      "name": "Legal Chatbot",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        240,
+        304
+      ],
+      "webhookId": "7d01f661-cfff-4d31-93fc-0dbc903d0abe"
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "id": "ceb63598-03eb-4a28-a9ba-eac9c3270b3b",
+      "name": "Conversation Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        320,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "You are a legal intake assistant for a law firm specializing in criminal and domestic cases.\n\nYour responsibilities:\n1. ONLY discuss criminal law and domestic law matters. If the user asks about anything else (business, immigration, tax, personal advice, etc.), politely inform them: \"I can only assist with criminal and domestic legal matters. For other issues, please contact our main office.\"\n\n2. Engage in natural conversation. Respond to greetings warmly (e.g., \"Hi! How can I help you today?\").\n\n3. For valid legal matters, gather the following information through natural conversation ONE QUESTION AT A TIME:\n   - Client full name (REQUIRED)\n   - Contact number (REQUIRED)\n   - Email address (REQUIRED - ask explicitly)\n   - Detailed description of the issue\n   - Whether it is a criminal or domestic case\n   - Relevant legal sections involved (if known)\n   - Evidence available (documents, witnesses, photos, etc.)\n   - Place of occurrence\n\n4. Be empathetic and professional. Do not rush. Ask follow-up questions naturally.\n\n5. ONLY when you have collected ALL required information (name, contact, email, issue details, case type, evidence, location), respond with:\n\"Thank you for providing all the details. Our [criminal/domestic] law specialist will contact you shortly at [email] or [phone]. We will review your case and get back to you within 24 hours.\"\n\nThen output ONLY this JSON structure with no additional text:\n{\n  \"caseType\": \"criminal\" or \"domestic\",\n  \"isLegalMatter\": true,\n  \"clientName\": \"full name\",\n  \"contactNumber\": \"phone number\",\n  \"email\": \"email address\",\n  \"issueDescription\": \"detailed description\",\n  \"sections\": \"legal sections involved or N/A\",\n  \"evidences\": \"list of evidence\",\n  \"placeOfOccurrence\": \"location\",\n  \"summary\": \"comprehensive summary of the case\"\n}\n\nWork like a proper chatbot, like if they say hi. rply soft and formal. Ask evidences, case details, what happened, how frequent it happened\n\nIf the matter is not legal-related, politely decline and do NOT output any JSON.",
+          "maxIterations": 15,
+          "returnIntermediateSteps": false
+        }
+      },
+      "id": "76987236-4e59-4d5e-900b-77ecca957c6d",
+      "name": "Legal Case Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        592,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "05fb9ed7-88b0-45db-8432-3443ffada7bd",
+      "name": "OpenAI Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        672,
+        528
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "RsVXwQBRXAHdFheH",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output.caseType }}",
+                    "rightValue": "criminal",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "8196f327-bd72-412d-8cdc-879c25d22bfb"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Criminal Case"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output.caseType }}",
+                    "rightValue": "domestic",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "eaeccc01-649f-49b4-ba45-a604b372ee06"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Domestic Case"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "bf591eaf-725c-437b-a826-65a1fd2f81d7",
+      "name": "Route by Case Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1296,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "emailSubject",
+              "value": "=New Criminal Case - {{ $json.clientName }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "emailBody",
+              "value": "=Criminal Case Intake\n\nClient Information:\n- Name: {{ $json.clientName }}\n- Contact: {{ $json.contactNumber }}\n- Email: {{ $json.email }}\n\nCase Details:\n- Issue: {{ $json.issueDescription }}\n- Legal Sections: {{ $json.sections }}\n- Evidence: {{ $json.evidences }}\n- Place of Occurrence: {{ $json.placeOfOccurrence }}\n\nSummary:\n{{ $json.summary }}\n\nPlease contact the client at the earliest to discuss the case.",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "clientEmail",
+              "value": "={{ $json.email }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "clientName",
+              "value": "={{ $json.clientName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6dad0cde-be65-4e75-a3db-582ec94f253e",
+      "name": "Prepare Criminal Case Email",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1520,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "criminallawyercase@gmail.com",
+        "subject": "={{ $json.emailSubject }}",
+        "emailType": "text",
+        "message": "={{ $json.emailBody }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "61979896-7480-4887-816f-1bf83c407b62",
+      "name": "Send to Criminal Lawyer",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1744,
+        208
+      ],
+      "webhookId": "19dfabf0-43e0-4c99-bf5f-1c0eb7d65b15",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "npe2AHzpE5lxz6yL",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "emailSubject",
+              "value": "=New Domestic Case - {{ $json.output.clientName }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "emailBody",
+              "value": "=Domestic Case Intake\n\nClient Information:\n- Name: {{ $json.output.clientName }}\n- Contact: {{ $json.output.contactNumber }}\n- Email: {{ $json.output.email }}\n\nCase Details:\n- Issue: {{ $json.output.issueDescription }}\n- Legal Sections:\n- Evidence: {{ $json.output.evidences }}\n- Place of Occurrence: {{ $json.output.placeOfOccurrence }}\n\nSummary:\n{{ $json.output.summary }}\n\nPlease contact the client at the earliest to discuss the case.",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "clientEmail",
+              "value": "={{ $json.output.email }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "clientName",
+              "value": "={{ $json.output.clientName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1f57af6c-e8c2-48e6-8185-13dc1d7bb78c",
+      "name": "Prepare Domestic Case Email",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1520,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "domesticlawyercase@gmail.com",
+        "subject": "={{ $json.emailSubject }}",
+        "emailType": "text",
+        "message": "={{ $json.emailBody }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "8cab50b2-32b1-48c1-9afc-d21c7527dd2c",
+      "name": "Send to Domestic Lawyer",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1744,
+        400
+      ],
+      "webhookId": "2801746d-c411-43f3-b398-aa9a1b0488e3",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "npe2AHzpE5lxz6yL",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.output }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "caseType",
+              "description": "Type of case: criminal or domestic",
+              "required": true
+            },
+            {
+              "name": "clientName",
+              "description": "Full name of the client",
+              "required": true
+            },
+            {
+              "name": "contactNumber",
+              "description": "Contact phone number",
+              "required": true
+            },
+            {
+              "name": "email",
+              "description": "Email address",
+              "required": true
+            },
+            {
+              "name": "issueDescription",
+              "description": "Detailed description of the legal issue",
+              "required": true
+            },
+            {
+              "name": "sections",
+              "description": "Legal sections involved"
+            },
+            {
+              "name": "evidences",
+              "description": "Evidence available",
+              "required": true
+            },
+            {
+              "name": "placeOfOccurrence",
+              "description": "Location where incident occurred",
+              "required": true
+            },
+            {
+              "name": "summary",
+              "description": "Summary of the case",
+              "required": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cdfc2f14-92f8-4b40-927d-46386999d1d8",
+      "name": "Extract Case Data",
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        944,
+        304
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Legal Chatbot": {
+      "main": [
+        [
+          {
+            "node": "Legal Case Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Legal Chatbot",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "Legal Case Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Legal Case Agent": {
+      "main": [
+        [
+          {
+            "node": "Extract Case Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Legal Case Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Extract Case Data",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Case Type": {
+      "main": [
+        [
+          {
+            "node": "Prepare Criminal Case Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Domestic Case Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Criminal Case Email": {
+      "main": [
+        [
+          {
+            "node": "Send to Criminal Lawyer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Domestic Case Email": {
+      "main": [
+        [
+          {
+            "node": "Send to Domestic Lawyer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Case Data": {
+      "main": [
+        [
+          {
+            "node": "Route by Case Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "f2a35619-c3ef-4691-8c9e-cd6ee5d8e1b8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "50a67351777616d48a4576f21afac617ebf7a6037cfbe11006aae8e9188f8891"
+  },
+  "id": "QvZr1IA2pBM22oj6",
+  "tags": []
+}

@@ -1,0 +1,825 @@
+{
+  "name": "Lawyer",
+  "nodes": [
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $binary.document.mimeType }}",
+                    "rightValue": "application/pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "e02aa537-1045-4bff-9bbc-df986423ae79"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $binary.document.mimeType }}",
+                    "rightValue": "application/docx",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "65b21b7d-cd99-4f10-9867-1b46570ea568"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $binary.document.mimeType }}",
+                    "rightValue": "audio/",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "0e949ab8-73f2-4b2d-8cdf-5d1bd7dd2a53"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f45df5fd-ec56-40dd-8788-f4f4671993c3",
+      "name": "Route by File Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        464,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "document",
+        "options": {
+          "joinPages": true
+        }
+      },
+      "id": "fa09549c-711c-4962-8fec-bfe2fd7e9be8",
+      "name": "Extract PDF Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        688,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.data || $json.text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an expert legal advisor. Analyze the provided legal document or consultation transcript and extract:\n1. Important points from the case\n2. Legal sections involved (IPC, CrPC, or relevant acts)\n3. Sections that can help the client (defense sections)\n4. Strategy to reduce impact or prove client as victim\n5. Case details summary\n6. Persons involved\n7. Estimated years of legal proceedings involved\n\nProvide comprehensive legal analysis based on Indian law or the applicable jurisdiction."
+        }
+      },
+      "id": "7b27c438-231b-4b6e-8cdf-9d579bf15794",
+      "name": "Legal Analysis AI",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        912,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\"importantPoints\":[\"Point 1\",\"Point 2\",\"Point 3\"],\"sectionsInvolved\":[\"Section 420 IPC\",\"Section 120B IPC\"],\"defenseSections\":[\"Section 79 IPC\",\"Section 80 IPC\"],\"defenseStrategy\":\"Strategy to reduce impact or prove innocence\",\"caseNumber\":\"AUTO-GENERATED\",\"caseDetails\":\"Brief summary of the case\",\"personsInvolved\":[\"Person 1\",\"Person 2\"],\"yearsInvolved\":5}"
+      },
+      "id": "e76dd742-99b6-430d-96a2-1b8e55afbce7",
+      "name": "Legal Analysis Schema",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1056,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "binaryPropertyName": "document",
+        "options": {}
+      },
+      "id": "746131e6-dee8-49ec-bf01-6967fda1c233",
+      "name": "Extract DOCX Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        688,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "html": "{{ \"<!DOCTYPE html>\\n\" + \"<html>\\n\" + \"<head>\\n\" + \"  <meta charset=\\\"UTF-8\\\">\\n\" + \"  <style>\\n\" + \"    body { font-family: Arial, sans-serif; margin: 40px; }\\n\" + \"    h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }\\n\" + \"    h2 { color: #34495e; margin-top: 30px; border-left: 4px solid #3498db; padding-left: 10px; }\\n\" + \"    .section { margin-bottom: 25px; }\\n\" + \"    ul { line-height: 1.8; }\\n\" + \"    .case-info { background: #ecf0f1; padding: 15px; border-radius: 5px; margin-bottom: 20px; }\\n\" + \"  </style>\\n\" + \"</head>\\n\" + \"<body>\\n\" + \"  <h1>Legal Case Analysis Report</h1>\\n\" + \"  <div class=\\\"case-info\\\">\\n\" + \"    <strong>Case Number:</strong> \" + $json.output.caseNumber + \"<br>\\n\" + \"    <strong>Estimated Duration:</strong> \" + $json.output.yearsInvolved + \" years\\n\" + \"  </div>\\n\" + \"  \\n\" + \"  <div class=\\\"section\\\">\\n\" + \"    <h2>Case Details</h2>\\n\" + \"    <p>\" + $json.output.caseDetails + \"</p>\\n\" + \"  </div>\\n\" + \"  \\n\" + \"  <div class=\\\"section\\\">\\n\" + \"    <h2>Important Points</h2>\\n\" + \"    <ul>\\n\" + \"      \" + $json.output.importantPoints.map(point => \"<li>\" + point + \"</li>\").join(\"\") + \"\\n\" + \"    </ul>\\n\" + \"  </div>\\n\" + \"  \\n\" + \"  <div class=\\\"section\\\">\\n\" + \"    <h2>Sections Involved</h2>\\n\" + \"    <ul>\\n\" + \"      \" + $json.output.sectionsInvolved.map(section => \"<li>\" + section + \"</li>\").join(\"\") + \"\\n\" + \"    </ul>\\n\" + \"  </div>\\n\" + \"  \\n\" + \"  <div class=\\\"section\\\">\\n\" + \"    <h2>Defense Sections (Client Protection)</h2>\\n\" + \"    <ul>\\n\" + \"      \" + $json.output.defenseSections.map(section => \"<li>\" + section + \"</li>\").join(\"\") + \"\\n\" + \"    </ul>\\n\" + \"  </div>\\n\" + \"  \\n\" + \"  <div class=\\\"section\\\">\\n\" + \"    <h2>Defense Strategy</h2>\\n\" + \"    <p>\" + $json.output.defenseStrategy + \"</p>\\n\" + \"  </div>\\n\" + \"  \\n\" + \"  <div class=\\\"section\\\">\\n\" + \"    <h2>Persons Involved</h2>\\n\" + \"    <ul>\\n\" + \"      \" + $json.output.personsInvolved.map(person => \"<li>\" + person + \"</li>\").join(\"\") + \"\\n\" + \"    </ul>\\n\" + \"  </div>\\n\" + \"</body>\\n\" + \"</html>\" }}"
+      },
+      "id": "ab5d912d-7a69-4f14-a046-25125ca31bfb",
+      "name": "Generate Legal Report HTML",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        1264,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dash.html2pdf.app/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"html\": $json.html } }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "pdfReport"
+            }
+          }
+        }
+      },
+      "id": "3806c811-c61e-4dba-9f15-4a4ebdebfd0c",
+      "name": "Convert to PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1488,
+        400
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4S9fEFCvIAaz0gyC",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "docxContent",
+              "value": "={{ \"LEGAL CASE ANALYSIS REPORT\\n\\n\" + \"Case Number: \" + $(\"Legal Analysis AI\").item.json.output.caseNumber + \"\\n\" + \"Estimated Duration: \" + $(\"Legal Analysis AI\").item.json.output.yearsInvolved + \" years\\n\\n\" + \"CASE DETAILS\\n\" + $(\"Legal Analysis AI\").item.json.output.caseDetails + \"\\n\\n\" + \"IMPORTANT POINTS\\n\" + $(\"Legal Analysis AI\").item.json.output.importantPoints.join(\"\\n- \") + \"\\n\\n\" + \"SECTIONS INVOLVED\\n\" + $(\"Legal Analysis AI\").item.json.output.sectionsInvolved.join(\"\\n- \") + \"\\n\\n\" + \"DEFENSE SECTIONS\\n\" + $(\"Legal Analysis AI\").item.json.output.defenseSections.join(\"\\n- \") + \"\\n\\n\" + \"DEFENSE STRATEGY\\n\" + $(\"Legal Analysis AI\").item.json.output.defenseStrategy + \"\\n\\n\" + \"PERSONS INVOLVED\\n\" + $(\"Legal Analysis AI\").item.json.output.personsInvolved.join(\"\\n- \") }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8cec3fdc-0da0-4c8c-9032-245725783e49",
+      "name": "Prepare DOCX Content",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1712,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "docxContent",
+        "binaryPropertyName": "docxReport",
+        "options": {
+          "fileName": "={{ $(\"Legal Analysis AI\").item.json.output.personsInvolved[0] + \"_\" + $(\"Legal Analysis AI\").item.json.output.caseNumber + \".docx\" }}"
+        }
+      },
+      "id": "986ed57b-6959-4edd-8ae0-a14ecba2ee2f",
+      "name": "Convert to DOCX",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1936,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "caseNo",
+              "value": "={{ $(\"Legal Analysis AI\").item.json.output.caseNumber }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "caseDetails",
+              "value": "={{ $(\"Legal Analysis AI\").item.json.output.caseDetails }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "sectionsInvolved",
+              "value": "={{ $(\"Legal Analysis AI\").item.json.output.sectionsInvolved.join(\", \") }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "yearsInvolved",
+              "value": "={{ $(\"Legal Analysis AI\").item.json.output.yearsInvolved }}",
+              "type": "number"
+            },
+            {
+              "id": "5",
+              "name": "personsInvolved",
+              "value": "={{ $(\"Legal Analysis AI\").item.json.output.personsInvolved.join(\", \") }}",
+              "type": "string"
+            },
+            {
+              "id": "6",
+              "name": "defenseSections",
+              "value": "={{ $(\"Legal Analysis AI\").item.json.output.defenseSections.join(\", \") }}",
+              "type": "string"
+            },
+            {
+              "id": "7",
+              "name": "defenseStrategy",
+              "value": "={{ $(\"Legal Analysis AI\").item.json.output.defenseStrategy }}",
+              "type": "string"
+            },
+            {
+              "id": "8",
+              "name": "dateProcessed",
+              "value": "={{ $now.toFormat(\"yyyy-MM-dd HH:mm:ss\") }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "91cca704-1a57-4061-af0d-0234d60797b0",
+      "name": "Prepare Excel Row",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2608,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "WkmnbuCiRmXnnayf",
+          "mode": "list",
+          "cachedResultName": "Cases",
+          "cachedResultUrl": "/projects/6oWoDE3L3f3zDxQ8/datatables/WkmnbuCiRmXnnayf"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "caseNo": "={{ $json.caseNo }}",
+            "caseDetails": "={{ $json.caseDetails }}",
+            "sectionsInvolved": "={{ $json.sectionsInvolved }}",
+            "yearsInvolved": "={{ $json.yearsInvolved }}",
+            "personsInvolved": "={{ $json.personsInvolved }}",
+            "defenseSections": "={{ $json.defenseSections }}",
+            "defenseStrategy": "={{ $json.defenseStrategy }}",
+            "dateProcessed": "={{ $json.dateProcessed }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "caseNo",
+              "displayName": "caseNo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "caseDetails",
+              "displayName": "caseDetails",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "sectionsInvolved",
+              "displayName": "sectionsInvolved",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "yearsInvolved",
+              "displayName": "yearsInvolved",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "personsInvolved",
+              "displayName": "personsInvolved",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "defenseSections",
+              "displayName": "defenseSections",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "defenseStrategy",
+              "displayName": "defenseStrategy",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "dateProcessed",
+              "displayName": "dateProcessed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "cf1996d7-2948-4efd-9096-f2a5177c34a9",
+      "name": "Update Case Tracking",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2832,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "formTitle": "Legal Document Analysis System",
+        "formDescription": "Upload your legal documents for AI-powered analysis",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Upload Document",
+              "fieldType": "file",
+              "fieldName": "document",
+              "multipleFiles": false,
+              "acceptFileTypes": ".pdf,.docx,.doc,.mp3,.wav,.m4a",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Case Description (Optional)",
+              "fieldType": "textarea",
+              "fieldName": "caseDescription",
+              "placeholder": "Provide any additional context about your case"
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "addFormPage": {
+          "pageTitle": "Legal Document Upload",
+          "pageDescription": "Secure AI-powered legal document analysis",
+          "buttonLabel": "Upload & Analyze",
+          "customCss": "body { font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 0; padding: 40px 20px; min-height: 100vh; }\n.form-container { max-width: 700px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); padding: 40px; }\n.form-header { text-align: center; margin-bottom: 30px; }\n.form-header h1 { color: #2c3e50; font-size: 32px; margin-bottom: 10px; font-weight: 700; }\n.form-header p { color: #7f8c8d; font-size: 16px; line-height: 1.6; }\n.form-field { margin-bottom: 25px; }\n.form-field label { display: block; color: #34495e; font-weight: 600; margin-bottom: 8px; font-size: 14px; }\n.form-field input[type=\"file\"] { width: 100%; padding: 12px; border: 2px dashed #3498db; border-radius: 8px; background: #f8f9fa; cursor: pointer; transition: all 0.3s; }\n.form-field input[type=\"file\"]:hover { border-color: #2980b9; background: #e8f4f8; }\n.form-field textarea { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-family: inherit; font-size: 14px; resize: vertical; min-height: 100px; transition: border-color 0.3s; }\n.form-field textarea:focus { outline: none; border-color: #3498db; }\n.submit-btn { width: 100%; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }\n.submit-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4); }\n.info-box { background: #e8f4f8; border-left: 4px solid #3498db; padding: 15px; border-radius: 4px; margin-top: 20px; }\n.info-box p { margin: 0; color: #2c3e50; font-size: 13px; line-height: 1.6; }\n.security-badge { text-align: center; margin-top: 20px; color: #95a5a6; font-size: 12px; }\n.security-badge::before { content: \"🔒 \"; }"
+        },
+        "options": {
+          "appendAttribution": false,
+          "buttonLabel": "Analyze Document"
+        }
+      },
+      "id": "71e32e90-b8e7-4973-8481-1c7485ef957c",
+      "name": "Client Upload Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        240,
+        400
+      ],
+      "webhookId": "df073691-d644-434f-9010-d8ffa53df6d6"
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "respondWith": "showText",
+        "responseText": "={{ \"<!DOCTYPE html>\\n\" + \"<html>\\n\" + \"<head>\\n\" + \"  <meta charset=\\\"UTF-8\\\">\\n\" + \"  <meta name=\\\"viewport\\\" content=\\\"width=device-width, initial-scale=1.0\\\">\\n\" + \"  <title>Legal Analysis Report</title>\\n\" + \"  <style>\\n\" + \"    * { margin: 0; padding: 0; box-sizing: border-box; }\\n\" + \"    body { font-family: \\\"Segoe UI\\\", Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; min-height: 100vh; }\\n\" + \"    .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden; }\\n\" + \"    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; text-align: center; }\\n\" + \"    .header h1 { font-size: 32px; margin-bottom: 10px; font-weight: 700; }\\n\" + \"    .header .subtitle { font-size: 16px; opacity: 0.9; }\\n\" + \"    .content { padding: 40px; }\\n\" + \"    .case-info { background: linear-gradient(135deg, #e8f4f8 0%, #f0e8f8 100%); padding: 25px; border-radius: 8px; margin-bottom: 30px; border-left: 5px solid #667eea; }\\n\" + \"    .case-info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }\\n\" + \"    .case-info-item { display: flex; flex-direction: column; }\\n\" + \"    .case-info-label { font-size: 12px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; font-weight: 600; }\\n\" + \"    .case-info-value { font-size: 18px; color: #2c3e50; font-weight: 700; }\\n\" + \"    .section { margin-bottom: 35px; }\\n\" + \"    .section h2 { color: #2c3e50; font-size: 24px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 3px solid #667eea; display: inline-block; }\\n\" + \"    .section-content { color: #34495e; line-height: 1.8; font-size: 15px; }\\n\" + \"    .section-content p { margin-bottom: 15px; }\\n\" + \"    .section-content ul { list-style: none; padding-left: 0; }\\n\" + \"    .section-content li { padding: 12px 15px; margin-bottom: 10px; background: #f8f9fa; border-left: 4px solid #667eea; border-radius: 4px; transition: all 0.3s; }\\n\" + \"    .section-content li:hover { background: #e8f4f8; transform: translateX(5px); }\\n\" + \"    .defense-strategy { background: #fff3cd; border-left: 5px solid #ffc107; padding: 20px; border-radius: 8px; margin-top: 15px; }\\n\" + \"    .defense-strategy p { color: #856404; font-weight: 500; }\\n\" + \"    .download-section { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 8px; margin-top: 40px; text-align: center; }\\n\" + \"    .download-section h2 { color: white; border: none; font-size: 24px; margin-bottom: 15px; }\\n\" + \"    .download-section p { margin-bottom: 20px; opacity: 0.95; }\\n\" + \"    .download-buttons { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }\\n\" + \"    .download-btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 28px; background: white; color: #667eea; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; transition: all 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }\\n\" + \"    .download-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 25px rgba(0,0,0,0.3); }\\n\" + \"    .success-badge { display: inline-block; background: #27ae60; color: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; margin-top: 15px; }\\n\" + \"    .footer { text-align: center; padding: 20px; color: #95a5a6; font-size: 13px; border-top: 1px solid #ecf0f1; }\\n\" + \"    .footer::before { content: \\\"🔒 \\\"; }\\n\" + \"    @media (max-width: 768px) { .content { padding: 20px; } .header { padding: 30px 20px; } .case-info-grid { grid-template-columns: 1fr; } }\\n\" + \"  </style>\\n\" + \"</head>\\n\" + \"<body>\\n\" + \"  <div class=\\\"container\\\">\\n\" + \"    <div class=\\\"header\\\">\\n\" + \"      <h1>⚖️ Legal Case Analysis Report</h1>\\n\" + \"      <div class=\\\"subtitle\\\">AI-Powered Legal Document Analysis</div>\\n\" + \"    </div>\\n\" + \"    \\n\" + \"    <div class=\\\"content\\\">\\n\" + \"      <div class=\\\"case-info\\\">\\n\" + \"        <div class=\\\"case-info-grid\\\">\\n\" + \"          <div class=\\\"case-info-item\\\">\\n\" + \"            <div class=\\\"case-info-label\\\">Case Number</div>\\n\" + \"            <div class=\\\"case-info-value\\\">\" + $('Legal Analysis AI').item.json.output.caseNumber + \"</div>\\n\" + \"          </div>\\n\" + \"          <div class=\\\"case-info-item\\\">\\n\" + \"            <div class=\\\"case-info-label\\\">Estimated Duration</div>\\n\" + \"            <div class=\\\"case-info-value\\\">\" + $('Legal Analysis AI').item.json.output.yearsInvolved + \" years</div>\\n\" + \"          </div>\\n\" + \"          <div class=\\\"case-info-item\\\">\\n\" + \"            <div class=\\\"case-info-label\\\">Analysis Date</div>\\n\" + \"            <div class=\\\"case-info-value\\\">\" + $now.toFormat('MMM d, yyyy') + \"</div>\\n\" + \"          </div>\\n\" + \"        </div>\\n\" + \"      </div>\\n\" + \"      \\n\" + \"      <div class=\\\"section\\\">\\n\" + \"        <h2>📋 Case Details</h2>\\n\" + \"        <div class=\\\"section-content\\\">\\n\" + \"          <p>\" + $('Legal Analysis AI').item.json.output.caseDetails + \"</p>\\n\" + \"        </div>\\n\" + \"      </div>\\n\" + \"      \\n\" + \"      <div class=\\\"section\\\">\\n\" + \"        <h2>🔍 Important Points</h2>\\n\" + \"        <div class=\\\"section-content\\\">\\n\" + \"          <ul>\\n\" + \"            \" + $('Legal Analysis AI').item.json.output.importantPoints.map(point => \"<li>\" + point + \"</li>\").join(\"\") + \"\\n\" + \"          </ul>\\n\" + \"        </div>\\n\" + \"      </div>\\n\" + \"      \\n\" + \"      <div class=\\\"section\\\">\\n\" + \"        <h2>📜 Sections Involved</h2>\\n\" + \"        <div class=\\\"section-content\\\">\\n\" + \"          <ul>\\n\" + \"            \" + $('Legal Analysis AI').item.json.output.sectionsInvolved.map(section => \"<li>\" + section + \"</li>\").join(\"\") + \"\\n\" + \"          </ul>\\n\" + \"        </div>\\n\" + \"      </div>\\n\" + \"      \\n\" + \"      <div class=\\\"section\\\">\\n\" + \"        <h2>🛡️ Defense Sections (Client Protection)</h2>\\n\" + \"        <div class=\\\"section-content\\\">\\n\" + \"          <ul>\\n\" + \"            \" + $('Legal Analysis AI').item.json.output.defenseSections.map(section => \"<li>\" + section + \"</li>\").join(\"\") + \"\\n\" + \"          </ul>\\n\" + \"        </div>\\n\" + \"      </div>\\n\" + \"      \\n\" + \"      <div class=\\\"section\\\">\\n\" + \"        <h2>💡 Defense Strategy</h2>\\n\" + \"        <div class=\\\"section-content\\\">\\n\" + \"          <div class=\\\"defense-strategy\\\">\\n\" + \"            <p>\" + $('Legal Analysis AI').item.json.output.defenseStrategy + \"</p>\\n\" + \"          </div>\\n\" + \"        </div>\\n\" + \"      </div>\\n\" + \"      \\n\" + \"      <div class=\\\"section\\\">\\n\" + \"        <h2>👥 Persons Involved</h2>\\n\" + \"        <div class=\\\"section-content\\\">\\n\" + \"          <ul>\\n\" + \"            \" + $('Legal Analysis AI').item.json.output.personsInvolved.map(person => \"<li>\" + person + \"</li>\").join(\"\") + \"\\n\" + \"          </ul>\\n\" + \"        </div>\\n\" + \"      </div>\\n\" + \"      \\n\" + \"      <div class=\\\"download-section\\\">\\n\" + \"        <h2>📥 Download Reports</h2>\\n\" + \"        <p>Your comprehensive legal analysis is complete. Download the full report in your preferred format.</p>\\n\" + \"        <div class=\\\"download-buttons\\\">\\n\" + \"          <a href=\\\"#\\\" class=\\\"download-btn\\\">📄 Download PDF Report</a>\\n\" + \"          <a href=\\\"#\\\" class=\\\"download-btn\\\">📝 Download DOCX Report</a>\\n\" + \"        </div>\\n\" + \"        <div class=\\\"success-badge\\\">✓ Case tracking updated in database</div>\\n\" + \"      </div>\\n\" + \"    </div>\\n\" + \"    \\n\" + \"    <div class=\\\"footer\\\">\\n\" + \"      Secure & Confidential Legal Analysis System\\n\" + \"    </div>\\n\" + \"  </div>\\n\" + \"</body>\\n\" + \"</html>\" }}"
+      },
+      "id": "7c9098cf-1f8b-440f-bc34-85960790f187",
+      "name": "Display Results to Client",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        3056,
+        400
+      ],
+      "webhookId": "4c6c10f0-5232-47b6-acc3-e1185afb2d22"
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "pdfReport",
+        "name": "={{ $(\"Legal Analysis AI\").item.json.output.personsInvolved[0] + \"_\" + $(\"Legal Analysis AI\").item.json.output.caseNumber + \".pdf\" }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "id": "2297c6e3-5f35-4dbd-91ed-1d131c1ec33e",
+      "name": "Upload PDF to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2160,
+        304
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ChUGqX3YZFupfBxh",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "d6fef732-0d26-4958-a657-9b87f82081ac",
+      "name": "Combine Upload Results",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2384,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "docxReport",
+        "name": "={{ $(\"Legal Analysis AI\").item.json.output.personsInvolved[0] + \"_\" + $(\"Legal Analysis AI\").item.json.output.caseNumber + \".docx\" }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "id": "14c0d7f4-e402-4d62-b296-c31c099d80a2",
+      "name": "Upload DOCX to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2160,
+        496
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ChUGqX3YZFupfBxh",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "12e96614-d458-4ca1-a4a7-e63bc439761c",
+      "name": "Ollama",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        928,
+        624
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "RsVXwQBRXAHdFheH",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "binaryPropertyName": "document",
+        "options": {}
+      },
+      "id": "f402489d-e4f4-4c72-80a0-dfde129acd1c",
+      "name": "Transcribe Audio using ollama",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        688,
+        592
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "RsVXwQBRXAHdFheH",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Route by File Type": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract DOCX Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Transcribe Audio using ollama",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF Text": {
+      "main": [
+        [
+          {
+            "node": "Legal Analysis AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Legal Analysis AI": {
+      "main": [
+        [
+          {
+            "node": "Generate Legal Report HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Legal Analysis Schema": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Legal Analysis AI",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract DOCX Text": {
+      "main": [
+        [
+          {
+            "node": "Legal Analysis AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Legal Report HTML": {
+      "main": [
+        [
+          {
+            "node": "Convert to PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare DOCX Content": {
+      "main": [
+        [
+          {
+            "node": "Convert to DOCX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Excel Row": {
+      "main": [
+        [
+          {
+            "node": "Update Case Tracking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Client Upload Form": {
+      "main": [
+        [
+          {
+            "node": "Route by File Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to PDF": {
+      "main": [
+        [
+          {
+            "node": "Prepare DOCX Content",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Upload PDF to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to DOCX": {
+      "main": [
+        [
+          {
+            "node": "Upload DOCX to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Case Tracking": {
+      "main": [
+        [
+          {
+            "node": "Display Results to Client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload PDF to Drive": {
+      "main": [
+        [
+          {
+            "node": "Combine Upload Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Upload Results": {
+      "main": [
+        [
+          {
+            "node": "Prepare Excel Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload DOCX to Drive": {
+      "main": [
+        [
+          {
+            "node": "Combine Upload Results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Ollama": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Legal Analysis AI",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe Audio using ollama": {
+      "main": [
+        [
+          {
+            "node": "Legal Analysis AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "78c50333-0046-4c50-91c6-8c4e2b376919",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "50a67351777616d48a4576f21afac617ebf7a6037cfbe11006aae8e9188f8891"
+  },
+  "id": "y6ZX85dBcub6OGHn",
+  "tags": []
+}
